@@ -12,13 +12,14 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-
+import { useRouter } from "next/navigation";
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const router = useRouter();
 
   const handleLogin = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -32,6 +33,7 @@ export default function LoginPage() {
       });
       if (error) throw error;
       setMessage("Login successful!");
+      router.push("/dashboard");
     } catch (error: any) {
       setMessage(error.message || "Error logging in.");
     } finally {
