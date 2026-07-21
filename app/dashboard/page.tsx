@@ -60,11 +60,11 @@ export default function DashboardPage() {
         setLoading(true);
 
         const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession();
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
 
-        if (sessionError || !session) {
+        if (userError || !user) {
           router.push("/login");
           return;
         }
@@ -107,7 +107,9 @@ export default function DashboardPage() {
       if (userError || !user) {
         throw new Error("User not authenticated");
       }
-
+      if (parseFloat(cost) <= 0) {
+        throw new Error("Cost must be a positive number");
+      }
       const { error: insertError } = await supabase
         .from("subscriptions")
         .insert([
@@ -124,7 +126,12 @@ export default function DashboardPage() {
         throw insertError;
       }
 
-      // Reset form fields
+    const { data: newSubscription, error  } = await supabase
+        .from("subscriptions")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
       setName("");
       setCost("");
 
@@ -143,7 +150,10 @@ export default function DashboardPage() {
     e.preventDefault();
 
     if (!editingSubscription) return;
-
+    if (parseFloat(editingSubscription.cost.toString()) <= 0) {
+      alert("Cost must be a positive number");
+      return;
+    }
     try {
       const { error: updateError } = await supabase
         .from("subscriptions")
@@ -274,6 +284,7 @@ export default function DashboardPage() {
                     <div className="space-y-4">
                       <label className="text-sm font-medium">Name</label>
                       <Input
+                        maxLength={100}
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         required
@@ -393,8 +404,7 @@ export default function DashboardPage() {
                     outerRadius={80}
                     paddingAngle={5}
                     dataKey="value"
-                  > 
-                  </Pie>
+                  ></Pie>
                   <Tooltip
                     formatter={(value) => {
                       if (typeof value === "number") {
@@ -515,6 +525,7 @@ export default function DashboardPage() {
                     <div className="space-y-2">
                       <label htmlFor="name">Name</label>
                       <Input
+                        maxLength={100}
                         type="text"
                         value={editingSubscription.name}
                         onChange={(e) =>
