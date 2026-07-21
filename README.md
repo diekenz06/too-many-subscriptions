@@ -2,7 +2,7 @@
 
 A serverless subscription tracker built with Next.js and Supabase.
 
-Live Demo: [YOUR_LIVE_LINK_HERE]
+Live Demo: https://too-many-subscriptions.onrender.com
 
 ---
 
