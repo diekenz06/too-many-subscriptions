@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import {
   Table,
@@ -86,7 +86,51 @@ export default function DashboardPage() {
 
     fetchSubscriptions();
   }, [router]);
+  const totalMonthlyCost = useMemo(() => {
+    return subscriptions.reduce((total, sub) => {
+      if (sub.billing_cycle === "yearly") {
+        return total + sub.cost / 12;
+      }
+      return total + sub.cost;
+    }, 0);
+  }, [subscriptions]);
 
+  const chartData = useMemo(() => {
+    return [
+      {
+        name: "Monthly Cost",
+        value: subscriptions
+          .filter((sub) => sub.billing_cycle === "monthly")
+          .reduce((total, sub) => total + sub.cost, 0),
+        fill: "blue",
+      },
+      {
+        name: "Yearly Cost (Per Month Equivalent)",
+        value: subscriptions
+          .filter((sub) => sub.billing_cycle === "yearly")
+          .reduce((total, sub) => total + sub.cost / 12, 0),
+        fill: "green",
+      },
+    ];
+  }, [subscriptions]);
+
+  const monthlySubscriptions = useMemo(() => {
+    return subscriptions.filter((sub) => sub.billing_cycle === "monthly")
+      .length;
+  }, [subscriptions]);
+
+  const yearlySubscriptions = useMemo(() => {
+    return subscriptions.length - monthlySubscriptions;
+  }, [subscriptions, monthlySubscriptions]);
+
+  const nextRenewal = useMemo(() => {
+    return subscriptions.length
+      ? subscriptions.reduce((earliest, sub) => {
+          const renewalDateValue = new Date(sub.renewal_date).getTime();
+          return renewalDateValue < earliest ? renewalDateValue : earliest;
+        }, new Date(subscriptions[0].renewal_date).getTime())
+      : null;
+  }, [subscriptions]);
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -110,7 +154,7 @@ export default function DashboardPage() {
       if (parseFloat(cost) <= 0) {
         throw new Error("Cost must be a positive number");
       }
-      const { error: insertError } = await supabase
+      const { data: newSubscription, error: insertError } = await supabase
         .from("subscriptions")
         .insert([
           {
@@ -120,25 +164,20 @@ export default function DashboardPage() {
             renewal_date: renewalDate,
             user_id: user.id,
           },
-        ]);
+        ])
+        .select()
+        .single();
 
       if (insertError) {
         throw insertError;
       }
 
-    const { data: newSubscription, error  } = await supabase
-        .from("subscriptions")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
+      setSubscriptions((prev) => [...prev, newSubscription]);
       setName("");
       setCost("");
 
       setRenewalDate("");
       setIsDialogOpen(false);
-
-      window.location.reload();
     } catch (error: any) {
       alert(error.message || "Error creating subscription.");
     }
@@ -214,41 +253,6 @@ export default function DashboardPage() {
       alert(error.message || "Error logging out.");
     }
   };
-
-  const totalMonthlyCost = subscriptions.reduce((total, sub) => {
-    if (sub.billing_cycle === "yearly") {
-      return total + sub.cost / 12;
-    }
-    return total + sub.cost;
-  }, 0);
-
-  const chartData = [
-    {
-      name: "Monthly Cost",
-      value: subscriptions
-        .filter((sub) => sub.billing_cycle === "monthly")
-        .reduce((total, sub) => total + sub.cost, 0),
-      fill: "blue",
-    },
-    {
-      name: "Yearly Cost (Per Month Equivalent)",
-      value: subscriptions
-        .filter((sub) => sub.billing_cycle === "yearly")
-        .reduce((total, sub) => total + sub.cost / 12, 0),
-      fill: "green",
-    },
-  ];
-
-  const monthlySubscriptions = subscriptions.filter(
-    (sub) => sub.billing_cycle === "monthly",
-  ).length;
-  const yearlySubscriptions = subscriptions.length - monthlySubscriptions;
-  const nextRenewal = subscriptions.length
-    ? subscriptions.reduce((earliest, sub) => {
-        const renewalDateValue = new Date(sub.renewal_date).getTime();
-        return renewalDateValue < earliest ? renewalDateValue : earliest;
-      }, new Date(subscriptions[0].renewal_date).getTime())
-    : null;
 
   return (
     <div className="min-h-screen bg-white font-sans antialiased">
