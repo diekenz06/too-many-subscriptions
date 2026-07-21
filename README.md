@@ -36,7 +36,7 @@ Live Demo: [YOUR_LIVE_LINK_HERE]
 3. Set up environment variables (create `.env.local` in the root directory):
    ```env
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_public_key
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_publishable_key
    ```
 
 4. Run development server:
