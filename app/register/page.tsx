@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
@@ -70,7 +71,15 @@ export default function RegisterPage() {
             </Button>
           </CardFooter>
         </form>
+        <div className="mt-4 text-center mb-4">
+          <Link
+            href="/login"
+            className="text-sm text-primary hover:underline  "
+          >
+            Already have an account? Login
+          </Link>
+        </div>
       </Card>
     </div>
   );
-}
+} 

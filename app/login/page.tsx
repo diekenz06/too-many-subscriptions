@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -73,7 +74,15 @@ export default function LoginPage() {
             </Button>
           </CardFooter>
         </form>
+        <div className="mt-4 text-center mb-4">
+          <Link
+            href="/register"
+            className="text-sm text-primary hover:underline"
+          >
+            Don't have an account? Register
+          </Link>
+        </div>
       </Card>
     </div>
   );
-}
+} 

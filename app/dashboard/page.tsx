@@ -42,6 +42,9 @@ export default function DashboardPage() {
     "monthly",
   );
   const [renewalDate, setRenewalDate] = useState("");
+
+  const [editingSubscription, setEditingSubscription] =
+    useState<Subscription | null>(null);
   const router = useRouter();
   useEffect(() => {
     const fetchSubscriptions = async () => {
@@ -123,6 +126,40 @@ export default function DashboardPage() {
       window.location.reload();
     } catch (error: any) {
       alert(error.message || "Error creating subscription.");
+    }
+  };
+
+  const handleUpdateSubscription = async (
+    e: React.SyntheticEvent<HTMLFormElement>,
+  ) => {
+    e.preventDefault();
+
+    if (!editingSubscription) return;
+
+    try {
+      const { error: updateError } = await supabase
+        .from("subscriptions")
+        .update({
+          name: editingSubscription.name,
+          cost: parseFloat(editingSubscription.cost.toString()),
+          billing_cycle: editingSubscription.billing_cycle,
+          renewal_date: editingSubscription.renewal_date,
+        })
+        .eq("id", editingSubscription.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      setSubscriptions((prev) =>
+        prev.map((sub) =>
+          sub.id === editingSubscription.id ? editingSubscription : sub,
+        ),
+      );
+
+      setEditingSubscription(null);
+    } catch (error: any) {
+      alert(error.message || "Error updating subscription.");
     }
   };
 
@@ -221,6 +258,7 @@ export default function DashboardPage() {
                       <label className="text-sm font-medium">Cost</label>
                       <Input
                         type="number"
+                        step="0.01"
                         value={cost}
                         onChange={(e) => setCost(e.target.value)}
                         required
@@ -371,14 +409,24 @@ export default function DashboardPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingSubscription(subscription)}
+                          className="text-gray-400 hover:text-blue-600 transition text-sm font-medium"
+                        >
+                          Edit
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
                           onClick={() =>
                             handleDeleteSubscription(subscription.id)
                           }
                           className="text-gray-400 hover:text-red-600 transition text-sm font-medium"
                         >
                           Remove
-                        </button>
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -388,6 +436,99 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+      <Dialog
+        open={editingSubscription !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditingSubscription(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Subscription</DialogTitle>
+            <DialogDescription>
+              Update the details for your subscription.
+            </DialogDescription>
+          </DialogHeader>
+          {editingSubscription && (
+            <form onSubmit={handleUpdateSubscription}>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label htmlFor="name">Name</label>
+                    <Input
+                      type="text"
+                      value={editingSubscription.name}
+                      onChange={(e) =>
+                        setEditingSubscription({
+                          ...editingSubscription,
+                          name: e.target.value,
+                        })
+                      }
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="cost">Cost</label>
+                    <Input
+                      step="0.01"
+                      type="number"
+                      value={editingSubscription.cost}
+                      onChange={(e) =>
+                        setEditingSubscription({
+                          ...editingSubscription,
+                          cost: parseFloat(e.target.value) || 0,
+                        })
+                      }
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label htmlFor="billing_cycle" className="text-sm font-medium">Billing Cycle</label>
+                    <select 
+                      className="w-full border rounded p-2 mt-1"
+                      value={editingSubscription.billing_cycle}
+                      onChange={(e) =>
+                        setEditingSubscription({
+                          ...editingSubscription,
+                          billing_cycle: e.target.value as "monthly" | "yearly",
+                        })
+                      }
+                    >
+                      <option value="monthly">Monthly</option>
+                      <option value="yearly">Yearly</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label htmlFor="renewal_date">Renewal Date</label>
+                    <Input
+                      type="date"
+                      value={editingSubscription.renewal_date}
+                      onChange={(e) =>
+                        setEditingSubscription({
+                          ...editingSubscription,
+                          renewal_date: e.target.value,
+                        })
+                      }
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 mt-4">
+                <Button type="submit">Update</Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setEditingSubscription(null)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
