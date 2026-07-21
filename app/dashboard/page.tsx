@@ -22,6 +22,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  Legend,
+} from "recharts";
 interface Subscription {
   id: string;
   name: string;
@@ -204,6 +212,23 @@ export default function DashboardPage() {
     return total + sub.cost;
   }, 0);
 
+  const chartData = [
+    {
+      name: "Monthly Cost",
+      value: subscriptions
+        .filter((sub) => sub.billing_cycle === "monthly")
+        .reduce((total, sub) => total + sub.cost, 0),
+      fill: "blue",
+    },
+    {
+      name: "Yearly Cost (Per Month Equivalent)",
+      value: subscriptions
+        .filter((sub) => sub.billing_cycle === "yearly")
+        .reduce((total, sub) => total + sub.cost / 12, 0),
+      fill: "green",
+    },
+  ];
+
   const monthlySubscriptions = subscriptions.filter(
     (sub) => sub.billing_cycle === "monthly",
   ).length;
@@ -352,183 +377,225 @@ export default function DashboardPage() {
               </div>
             </div>
           </div>
-          {subscriptions.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500">No subscriptions yet.</p>
-            </div>
-          ) : (
-            <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
-              <Table>
-                <TableHeader className="bg-gray-50">
-                  <TableRow className="border-b border-gray-200">
-                    <TableHead className="font-semibold text-gray-700 text-sm">
-                      Name
-                    </TableHead>
-                    <TableHead className="font-semibold text-gray-700 text-sm">
-                      Cost
-                    </TableHead>
-                    <TableHead className="font-semibold text-gray-700 text-sm">
-                      Billing
-                    </TableHead>
-                    <TableHead className="font-semibold text-gray-700 text-sm">
-                      Renewal
-                    </TableHead>
-                    <TableHead className="text-right font-semibold text-gray-700 text-sm">
-                      Action
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {subscriptions.map((subscription) => (
-                    <TableRow
-                      key={subscription.id}
-                      className="border-b border-gray-100 hover:bg-gray-50/50 transition"
-                    >
-                      <TableCell className="text-sm text-gray-900">
-                        {subscription.name}
-                      </TableCell>
-                      <TableCell className="text-sm text-gray-900 font-medium">
-                        {new Intl.NumberFormat("en-US", {
-                          style: "currency",
-                          currency: "USD",
-                        }).format(subscription.cost)}
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={`inline-flex items-center rounded px-2 py-1 text-xs font-medium ${subscription.billing_cycle === "monthly" ? "bg-blue-50 text-blue-700" : "bg-gray-100 text-gray-700"}`}
-                        >
-                          {subscription.billing_cycle === "monthly"
-                            ? "Monthly"
-                            : "Yearly"}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(subscription.renewal_date).toLocaleDateString(
-                          "de-DE",
-                          { day: "2-digit", month: "short", year: "numeric" },
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setEditingSubscription(subscription)}
-                          className="text-gray-400 hover:text-blue-600 transition text-sm font-medium"
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() =>
-                            handleDeleteSubscription(subscription.id)
-                          }
-                          className="text-gray-400 hover:text-red-600 transition text-sm font-medium"
-                        >
-                          Remove
-                        </Button>
-                      </TableCell>
+          <div className="rounded-2xl border border-gray-200 bg-gray-50/80 p-6 shadow-sm">
+            {subscriptions.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500">No subscriptions yet.</p>
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={chartData.filter((entry) => entry.value > 0)}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                  > 
+                  </Pie>
+                  <Tooltip
+                    formatter={(value) => {
+                      if (typeof value === "number") {
+                        return `$${value.toFixed(2)}`;
+                      }
+                      return String(value ?? "");
+                    }}
+                    contentStyle={{ fontSize: "14px", borderRadius: "4px" }}
+                  />
+                  <Legend wrapperStyle={{ paddingBottom: 12 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+            {subscriptions.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500">No subscriptions yet.</p>
+              </div>
+            ) : (
+              <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+                <Table>
+                  <TableHeader className="bg-gray-50">
+                    <TableRow className="border-b border-gray-200">
+                      <TableHead className="font-semibold text-gray-700 text-sm">
+                        Name
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-700 text-sm">
+                        Cost
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-700 text-sm">
+                        Billing
+                      </TableHead>
+                      <TableHead className="font-semibold text-gray-700 text-sm">
+                        Renewal
+                      </TableHead>
+                      <TableHead className="text-right font-semibold text-gray-700 text-sm">
+                        Action
+                      </TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
+                  </TableHeader>
+                  <TableBody>
+                    {subscriptions.map((subscription) => (
+                      <TableRow
+                        key={subscription.id}
+                        className="border-b border-gray-100 hover:bg-gray-50/50 transition"
+                      >
+                        <TableCell className="text-sm text-gray-900">
+                          {subscription.name}
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-900 font-medium">
+                          {new Intl.NumberFormat("en-US", {
+                            style: "currency",
+                            currency: "USD",
+                          }).format(subscription.cost)}
+                        </TableCell>
+                        <TableCell>
+                          <span
+                            className={`inline-flex items-center rounded px-2 py-1 text-xs font-medium ${subscription.billing_cycle === "monthly" ? "bg-blue-50 text-blue-700" : "bg-gray-100 text-green-700"}`}
+                          >
+                            {subscription.billing_cycle === "monthly"
+                              ? "Monthly"
+                              : "Yearly"}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          {new Date(
+                            subscription.renewal_date,
+                          ).toLocaleDateString("de-DE", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                          })}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setEditingSubscription(subscription)}
+                            className="text-gray-400 hover:text-blue-600 transition text-sm font-medium"
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              handleDeleteSubscription(subscription.id)
+                            }
+                            className="text-gray-400 hover:text-red-600 transition text-sm font-medium"
+                          >
+                            Remove
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
         </div>
+        <Dialog
+          open={editingSubscription !== null}
+          onOpenChange={(open) => {
+            if (!open) setEditingSubscription(null);
+          }}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Subscription</DialogTitle>
+              <DialogDescription>
+                Update the details for your subscription.
+              </DialogDescription>
+            </DialogHeader>
+            {editingSubscription && (
+              <form onSubmit={handleUpdateSubscription}>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label htmlFor="name">Name</label>
+                      <Input
+                        type="text"
+                        value={editingSubscription.name}
+                        onChange={(e) =>
+                          setEditingSubscription({
+                            ...editingSubscription,
+                            name: e.target.value,
+                          })
+                        }
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="cost">Cost</label>
+                      <Input
+                        step="0.01"
+                        type="number"
+                        value={editingSubscription.cost}
+                        onChange={(e) =>
+                          setEditingSubscription({
+                            ...editingSubscription,
+                            cost: parseFloat(e.target.value) || 0,
+                          })
+                        }
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label
+                        htmlFor="billing_cycle"
+                        className="text-sm font-medium"
+                      >
+                        Billing Cycle
+                      </label>
+                      <select
+                        className="w-full border rounded p-2 mt-1"
+                        value={editingSubscription.billing_cycle}
+                        onChange={(e) =>
+                          setEditingSubscription({
+                            ...editingSubscription,
+                            billing_cycle: e.target.value as
+                              | "monthly"
+                              | "yearly",
+                          })
+                        }
+                      >
+                        <option value="monthly">Monthly</option>
+                        <option value="yearly">Yearly</option>
+                      </select>
+                    </div>
+                    <div className="space-y-2">
+                      <label htmlFor="renewal_date">Renewal Date</label>
+                      <Input
+                        type="date"
+                        value={editingSubscription.renewal_date}
+                        onChange={(e) =>
+                          setEditingSubscription({
+                            ...editingSubscription,
+                            renewal_date: e.target.value,
+                          })
+                        }
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 mt-4">
+                  <Button type="submit">Update</Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setEditingSubscription(null)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
-      <Dialog
-        open={editingSubscription !== null}
-        onOpenChange={(open) => {
-          if (!open) setEditingSubscription(null);
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit Subscription</DialogTitle>
-            <DialogDescription>
-              Update the details for your subscription.
-            </DialogDescription>
-          </DialogHeader>
-          {editingSubscription && (
-            <form onSubmit={handleUpdateSubscription}>
-              <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label htmlFor="name">Name</label>
-                    <Input
-                      type="text"
-                      value={editingSubscription.name}
-                      onChange={(e) =>
-                        setEditingSubscription({
-                          ...editingSubscription,
-                          name: e.target.value,
-                        })
-                      }
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="cost">Cost</label>
-                    <Input
-                      step="0.01"
-                      type="number"
-                      value={editingSubscription.cost}
-                      onChange={(e) =>
-                        setEditingSubscription({
-                          ...editingSubscription,
-                          cost: parseFloat(e.target.value) || 0,
-                        })
-                      }
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label htmlFor="billing_cycle" className="text-sm font-medium">Billing Cycle</label>
-                    <select 
-                      className="w-full border rounded p-2 mt-1"
-                      value={editingSubscription.billing_cycle}
-                      onChange={(e) =>
-                        setEditingSubscription({
-                          ...editingSubscription,
-                          billing_cycle: e.target.value as "monthly" | "yearly",
-                        })
-                      }
-                    >
-                      <option value="monthly">Monthly</option>
-                      <option value="yearly">Yearly</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label htmlFor="renewal_date">Renewal Date</label>
-                    <Input
-                      type="date"
-                      value={editingSubscription.renewal_date}
-                      onChange={(e) =>
-                        setEditingSubscription({
-                          ...editingSubscription,
-                          renewal_date: e.target.value,
-                        })
-                      }
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-              <div className="flex justify-end gap-2 mt-4">
-                <Button type="submit">Update</Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setEditingSubscription(null)}
-                >
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
