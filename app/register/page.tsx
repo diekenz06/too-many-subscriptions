@@ -20,6 +20,7 @@ export default function RegisterPage() {
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [isSuccess, setIsSuccess] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -42,8 +43,10 @@ export default function RegisterPage() {
     try {
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
+      setIsSuccess(true);
       setMessage("Registration successful!");
     } catch (error: any) {
+      setIsSuccess(false);
       setMessage(error.message || "Error registering user.");
     } finally {
       setLoading(false);
@@ -77,7 +80,7 @@ export default function RegisterPage() {
             </div>
           </CardContent>
 
-          {message && <div className="text-sm text-red-500">{message}</div>}
+          {message && <div className={`${isSuccess ? "text-sm text-green-500" : "text-sm text-red-500"}`}>{message}</div>}
           <CardFooter>
             <Button type="submit" disabled={loading}>
               {loading ? "Registering..." : "Register"}

@@ -20,6 +20,7 @@ export default function LoginPage() {
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [isSuccess, setIsSuccess] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -45,6 +46,7 @@ export default function LoginPage() {
         password,
       });
       if (error) throw error;
+      setIsSuccess(true);
       setMessage("Login successful!");
       router.push("/dashboard");
     } catch (error: any) {
@@ -79,7 +81,7 @@ export default function LoginPage() {
             </div>
           </CardContent>
 
-          {message && <div className="text-sm text-red-500">{message}</div>}
+          {message && <div className={`${isSuccess ? "text-sm text-green-500" : "text-sm text-red-500"}`}>{message}</div>}
           <CardFooter>
             <Button type="submit" disabled={loading}>
               {loading ? "Logging in..." : "Login"}
